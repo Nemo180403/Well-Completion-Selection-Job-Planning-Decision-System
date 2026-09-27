@@ -5,5 +5,5 @@ flowchart TD
     B -->|Yes| C[Liner Completion]
     B -->|No| D[Casing Perforation Completion]
 ```
-- [Liner Completion](./03_Development_Wells/Liner_Completion.md)
-- [Casing Perforation Completion](./03_Development_Wells/Casing_Perforation_Completion.md)
+- [Liner Completion](./Development_Wells/Liner_Completion.md)
+- [Casing Perforation Completion](./Development_Wells/Casing_Perforation_Completion.md)
