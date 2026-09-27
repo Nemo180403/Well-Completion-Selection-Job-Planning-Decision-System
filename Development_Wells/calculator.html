@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Casing Perforation Completion Calculator</title>
+<style>
+  :root {
+    --bg: #0f1720;
+    --card: #17212b;
+    --border: #2a3644;
+    --text: #e8edf2;
+    --muted: #93a3b3;
+    --accent: #4fb3ff;
+    --accent2: #4ade80;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --border: #dde3ea;
+      --text: #1a2430;
+      --muted: #5b6b7a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 24px 16px 40px;
+    min-height: 100%;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1rem; margin: 0 0 14px; color: var(--accent); }
+  label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; margin-top: 12px; }
+  label:first-of-type { margin-top: 0; }
+  select, input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-size: 1rem;
+  }
+  .row { display: flex; gap: 10px; }
+  .row > div { flex: 1; }
+  .result {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .result:last-child { border-bottom: none; }
+  .result .label { color: var(--muted); font-size: 0.9rem; }
+  .result .value { font-size: 1.15rem; font-weight: 600; }
+  .value.mud { color: var(--accent2); }
+  .value.vol { color: var(--accent); }
+  .note { font-size: 0.78rem; color: var(--muted); margin-top: 10px; line-height: 1.4; }
+  .safety { margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Casing Perforation Completion Calculator</h1>
+  <div class="sub">Well volume &amp; required mud weight from formation pressure</div>
+
+  <div class="card">
+    <h2>Inputs</h2>
+
+    <label for="depth">Well Depth / TVD (ft)</label>
+    <input type="number" id="depth" value="9843" step="1">
+
+    <label for="ppf">Casing Weight (5-1/2" OD, lb/ft)</label>
+    <select id="ppf">
+      <option value="14" data-id="5.012">14.0 ppf — ID 5.012"</option>
+      <option value="15.5" data-id="4.950">15.5 ppf — ID 4.950"</option>
+      <option value="17" data-id="4.892" selected>17.0 ppf — ID 4.892"</option>
+      <option value="20" data-id="4.778">20.0 ppf — ID 4.778"</option>
+      <option value="23" data-id="4.670">23.0 ppf — ID 4.670"</option>
+      <option value="26" data-id="4.548">26.0 ppf — ID 4.548"</option>
+      <option value="custom">Custom — enter ID manually</option>
+    </select>
+
+    <label for="id">Casing ID (inches)</label>
+    <input type="number" id="id" value="4.892" step="0.001">
+
+    <label for="pf">Formation Pressure (psi)</label>
+    <input type="number" id="pf" value="4500" step="1">
+
+    <label for="safety">Safety Margin / Overbalance (ppg)</label>
+    <input type="number" id="safety" value="0.3" step="0.1">
+  </div>
+
+  <div class="card">
+    <h2>Well Volume</h2>
+    <div class="result">
+      <span class="label">Capacity</span>
+      <span class="value vol" id="capOut">–</span>
+    </div>
+    <div class="result">
+      <span class="label">Total Well Volume</span>
+      <span class="value vol" id="volOut">–</span>
+    </div>
+    <div class="note">Capacity (bbl/ft) = ID² ÷ 1029.4. Volume (bbl) = Capacity × Depth.</div>
+  </div>
+
+  <div class="card">
+    <h2>Mud Weight to Displace Before Perforating</h2>
+    <div class="result">
+      <span class="label">Required Mud Weight (balanced)</span>
+      <span class="value mud" id="mwOut">–</span>
+    </div>
+    <div class="result safety">
+      <span class="label">Recommended Mud Weight (with overbalance)</span>
+      <span class="value mud" id="mwSafeOut">–</span>
+    </div>
+    <div class="note">Required MW (ppg) = Formation Pressure ÷ (0.052 × TVD). Overbalance margin is added per your well control policy — adjust or set to 0 for balanced/underbalanced perforating design.</div>
+  </div>
+</div>
+
+<script>
+  const depthEl = document.getElementById('depth');
+  const ppfEl = document.getElementById('ppf');
+  const idEl = document.getElementById('id');
+  const pfEl = document.getElementById('pf');
+  const safetyEl = document.getElementById('safety');
+
+  const capOut = document.getElementById('capOut');
+  const volOut = document.getElementById('volOut');
+  const mwOut = document.getElementById('mwOut');
+  const mwSafeOut = document.getElementById('mwSafeOut');
+
+  function syncIdFromPpf() {
+    const opt = ppfEl.options[ppfEl.selectedIndex];
+    if (opt.value !== 'custom') {
+      idEl.value = opt.dataset.id;
+    }
+    calculate();
+  }
+
+  function calculate() {
+    const depth = parseFloat(depthEl.value) || 0;
+    const id = parseFloat(idEl.value) || 0;
+    const pf = parseFloat(pfEl.value) || 0;
+    const safety = parseFloat(safetyEl.value) || 0;
+
+    const capacity = (id * id) / 1029.4; // bbl/ft
+    const volume = capacity * depth; // bbl
+
+    const mw = depth > 0 ? pf / (0.052 * depth) : 0; // ppg
+    const mwSafe = mw + safety;
+
+    capOut.textContent = capacity.toFixed(4) + ' bbl/ft';
+    volOut.textContent = volume.toFixed(1) + ' bbl';
+    mwOut.textContent = mw.toFixed(2) + ' ppg';
+    mwSafeOut.textContent = mwSafe.toFixed(2) + ' ppg';
+  }
+
+  ppfEl.addEventListener('change', syncIdFromPpf);
+  [depthEl, idEl, pfEl, safetyEl].forEach(el => el.addEventListener('input', calculate));
+
+  calculate();
+</script>
+</body>
+</html>
